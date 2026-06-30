@@ -1,0 +1,28 @@
+# Copy this file to terraform.tfvars and fill in the values
+# DO NOT commit terraform.tfvars with real secrets
+
+proxmox_user     = "root@pam"
+proxmox_password = "your-proxmox-password"
+
+# Golden template (created by scripts/create-golden-template.sh)
+golden_template_id = 9000
+storage_pool       = "local-lvm"
+
+# VM settings
+vm_id       = 200
+vm_name     = "gitops-app-01"
+memory_mb   = 4096
+cpu_cores   = 2
+disk_gb     = 20
+
+# Network
+network_ip      = "10.0.8.10"
+network_gateway = "10.0.8.1"
+network_dns     = "10.0.8.1"
+
+# Cloud-init
+ciuser     = "debian"
+cipassword = "change-me-in-production"
+
+# SSH key for cloud-init user (path to public key file)
+ssh_public_key_path = "id_rsa.pub"

@@ -1,0 +1,43 @@
+#cloud-config
+hostname: gitops-app
+manage_etc_hosts: true
+
+users:
+  - name: debian
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo
+    shell: /bin/bash
+
+package_update: true
+
+packages:
+  - nodejs
+  - npm
+  - git
+  - qemu-guest-agent
+
+runcmd:
+  - mkdir -p /opt/gitops-app
+  - git clone --depth 1 https://gitlab.com/example/gitops-app.git /opt/gitops-app || echo "Repo exists"
+  - cd /opt/gitops-app && npm ci --production
+  - |
+    cat <<'SVC' > /etc/systemd/system/gitops-app.service
+    [Unit]
+    Description=GitOps Node.js App
+    After=network.target
+
+    [Service]
+    WorkingDirectory=/opt/gitops-app
+    ExecStart=/usr/bin/node src/server.js
+    Restart=always
+    User=debian
+    Environment=NODE_ENV=production
+
+    [Install]
+    WantedBy=multi-user.target
+    SVC
+  - systemctl daemon-reload
+  - systemctl enable --now gitops-app
+  - systemctl enable --now qemu-guest-agent
+
+final_message: "GitOps App VM ready on :3000"

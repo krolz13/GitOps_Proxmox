@@ -1,0 +1,25 @@
+#cloud-config
+hostname: gitops-runner
+manage_etc_hosts: true
+
+users:
+  - name: debian
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_public_key}
+
+package_update: true
+
+packages:
+  - docker.io
+  - gitlab-runner
+  - qemu-guest-agent
+
+runcmd:
+  - gitlab-runner register --non-interactive --url "https://gitlab.com/" --registration-token "${gitlab_runner_token}" --executor "docker" --docker-image "docker:stable" --tag-list "proxmox,gitops" --run-untagged
+  - systemctl enable --now gitlab-runner
+  - systemctl enable --now qemu-guest-agent
+
+final_message: "GitLab Runner ready"

@@ -1,0 +1,17 @@
+# Terraform secrets – NEVER commit these
+secrets.auto.tfvars
+*.auto.tfvars
+terraform.tfvars
+
+# Terraform state and lock files
+terraform.tfstate
+terraform.tfstate.backup
+.terraform.tfstate.lock.info
+tfplan
+.terraform/
+
+# SSH key files committed by mistake
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub

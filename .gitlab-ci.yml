@@ -1,0 +1,32 @@
+stages:
+  - validate
+  - deploy
+  - notify
+
+validate:
+  stage: validate
+  script:
+    - terraform init
+    - terraform validate
+  only:
+    - main
+    - deploy
+
+deploy:
+  stage: deploy
+  script:
+    - terraform init
+    - terraform apply -auto-approve
+  environment:
+    name: production
+    url: http://10.0.8.10   # will be replaced with the actual VM IP
+  only:
+    - deploy
+  when: manual   # Optional: keep manual approval if desired
+
+notify:
+  stage: notify
+  script:
+    - echo "Deployment finished"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "deploy"

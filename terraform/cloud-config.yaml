@@ -1,0 +1,151 @@
+#cloud-config
+# Enhanced GitOps cloud-init configuration for Node.js on Proxmox
+# Features:
+# - Self-healing: app restarts on crash
+# - Monitoring: exposes /metrics
+# - Secure defaults
+# - Lazy cloning & dependency caching
+
+# Set hostname from Proxmox
+hostname: gitops-app-01
+manage_etc_hosts: true
+
+# Users
+users:
+  - name: debian
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: sudo
+    shell: /bin/bash
+
+# Update & upgrade (critical for security)
+package_update: true
+package_upgrade: true
+
+# Install required packages
+packages:
+  - curl
+  - git
+  - nodejs
+  - npm
+  - prometheus-node-exporter  # Monitoring
+  - qemu-guest-agent
+  - cloud-init
+  - jq                        # CLI JSON processing
+
+# Run commands
+runcmd:
+  # --- SYSTEM PREP ---
+  - echo "Cloud-init started at $(date)" >> /var/log/gitops-init.log
+  - systemctl enable --now qemu-guest-agent
+  - systemctl enable --now prometheus-node-exporter
+
+  # --- APP DEPLOYMENT ---
+  - |
+    # Simple retry logic for network transient failures
+    MAX_RETRIES=3
+    RETRY_DELAY=5
+    retry() {
+      local cmd="$*"
+      local result=1
+      local attempt=1
+      while [ $result -ne 0 ] && [ $attempt -le $MAX_RETRIES ]; do
+        echo "[$(date)] Attempt $attempt/$MAX_RETRIES..." >> /var/log/gitops-init.log
+        $cmd &>> /var/log/gitops-init.log|| result=$?
+        [ $result -ne 0 ] && sleep $RETRY_DELAY || break
+        ((attempt++))
+      done
+      return $result
+    }
+
+    # Lazy cloning with cache
+    APP_DIR="/opt/gitops-app"
+    if [ ! -d "$APP_DIR" ] || [ ! -f "$APP_DIR/package.json" ]; then
+      echo "Cloning app repository..." >> /var/log/gitops-init.log
+      retry git clone --depth 1 https://gitlab.com/example/gitops-app.git "$APP_DIR"
+      cd "$APP_DIR" && retry npm ci --production
+    else
+      echo "App directory exists; pulling latest changes..." >> /var/log/gitops-init.log
+      cd "$APP_DIR" && retry git pull && retry npm ci --production
+    fi
+
+  # --- SYSTEMd SERVICE ---
+  - |
+    cat <<'SVC_EOF' > /etc/systemd/system/gitops-app.service
+[Unit]
+Description=GitOps Node.js Application
+After=network.target
+Wants=gitops-liveness.timer
+
+[Service]
+WorkingDirectory=/opt/gitops-app
+ExecStart=/usr/bin/node src/server.js
+Restart=always
+RestartSec=10
+User=debian
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+# Security hardening
+PrivateTmp=true
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+
+# Monitoring
+StandardOutput=append:/var/log/gitops-app.log
+StandardError=append:/var/log/gitops-app.log
+SVC_EOF
+
+  # --- LIVENESS CHECK (self-healing) ---
+  - |
+    cat <<'TIMER_EOF' > /etc/systemd/system/gitops-liveness.timer
+[Unit]
+Description=Check GitOps app liveness every 60 seconds
+
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=60
+AccuracySec=1
+
+[Install]
+WantedBy=timers.target
+TIMER_EOF
+
+    cat <<'SERVICE_EOF' > /etc/systemd/system/gitops-liveness.service
+[Unit]
+Description=Check if GitOps app is responsive
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c '\
+  APP_DIR="/opt/gitops-app"
+  if ! systemctl is-active --quiet gitops-app.service; then
+    echo "[$(date)] App not active; restarting..." >> /var/log/gitops-liveness.log
+    systemctl restart gitops-app.service || true
+    exit 0
+  fi
+
+  # Basic HTTP health check
+  HTTP_STATUS=$(curl -o /dev/null -s -w "%{http_code}" http://127.0.0.1:3000/ || echo 0)
+  if [ "$HTTP_STATUS" -ne 200 ]; then
+    echo "[$(date)] App unhealthy (HTTP $HTTP_STATUS); restarting..." >> /var/log/gitops-liveness.log
+    systemctl restart gitops-app.service || true
+  else
+    echo "[$(date)] App healthy" >> /var/log/gitops-liveness.log
+  fi
+'
+SERVICE_EOF
+
+  # --- FINALIZE ---
+  - systemctl daemon-reload
+  - systemctl enable gitops-app gitops-liveness.timer
+  - |
+    if [ -f /opt/gitops-app/src/server.js ]; then
+      systemctl start gitops-app gitops-liveness.timer
+    fi
+
+  - echo "[$(date)] Cloud-init completed" >> /var/log/gitops-init.log
+  - curl -X POST --data-urlencode "payload={\"text\": \"🚀 GitOps VM $(hostname) is now online (IP: $(hostname -I | awk '{print $1}') )\"}" $WEBHOOK_URL 2>/dev/null || true
+
+# Final message
+final_message: "🎉 GitOps VM is now ready! Application runs on :3000"

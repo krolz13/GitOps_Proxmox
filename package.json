@@ -1,0 +1,13 @@
+{
+  "name": "gitops-proxmox-app",
+  "version": "0.1.0",
+  "description": "Simple Node JS app with 2 pages for GitOps demo",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "ejs": "^3.1.9",
+    "express": "^4.19.2"
+  }
+}
