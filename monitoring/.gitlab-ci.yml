@@ -1,0 +1,72 @@
+# GitLab CI/CD for Monitoring Stack
+# This pipeline deploys Prometheus, Grafana, and Node Exporter via Docker Compose
+
+stages:
+  - validate
+  - deploy
+
+variables:
+  MONITORING_HOST: "192.168.8.190"
+  MONITORING_USER: "debian"
+  MONITORING_PATH: "/opt/monitoring"
+
+validate_prometheus:
+  stage: validate
+  image: prom/prometheus:latest
+  script:
+    - promtool check config prometheus.yml
+  artifacts:
+    paths:
+      - prometheus.yml
+    expire_in: 1 hour
+
+validate_docker_compose:
+  stage: validate
+  image: docker/compose:latest
+  script:
+    - docker-compose config
+  artifacts:
+    paths:
+      - docker-compose.yml
+    expire_in: 1 hour
+
+deploy_monitoring:
+  stage: deploy
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache rsync openssh-client docker-cli docker-compose
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan $MONITORING_HOST >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - rsync -avz --delete ./ $MONITORING_USER@$MONITORING_HOST:$MONITORING_PATH/
+    - ssh $MONITORING_USER@$MONITORING_HOST "
+        cd $MONITORING_PATH &&
+        docker-compose pull &&
+        docker-compose up -d &&
+        sleep 10 &&
+        curl -s http://localhost:9090/-/healthy | grep -q 'Prometheus is Healthy' && echo 'Prometheus healthy' &&
+        curl -s http://localhost:3000/api/health | grep -q 'ok' && echo 'Grafana healthy' &&
+        curl -s http://localhost:9100/metrics | grep -q 'node_cpu_seconds_total' && echo 'Node Exporter healthy'
+      "
+  environment:
+    name: monitoring
+    url: http://192.168.8.190:3000
+  only:
+    - main
+    - develop
+  when: manual
+
+# Prometheus rule validation
+validate_rules:
+  stage: validate
+  image: prom/prometheus:latest
+  script:
+    - promtool check rules rules/*.yml
+  artifacts:
+    paths:
+      - rules/
+    expire_in: 1 hour

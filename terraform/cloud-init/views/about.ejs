@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="About GitOps App - Architecture and components">
+  <title><%= title %> - GitOps App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="header">
+    <nav class="nav container">
+      <a href="/" class="nav-brand" aria-label="GitOps App Home">
+        <svg class="logo" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+          <path d="M2 17l10 5 10-5"/>
+          <path d="M2 12l10 5 10-5"/>
+        </svg>
+        <span class="brand-text">GitOps App</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link">Home</a></li>
+        <li><a href="/about" class="nav-link active">About</a></li>
+        <li><a href="/metrics" class="nav-link">Metrics</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="about-content">
+    <section class="about-section">
+      <h1>About GitOps App</h1>
+      <p>
+        This application demonstrates a complete GitOps workflow for deploying and managing 
+        infrastructure and applications. The entire platform is built on Proxmox VE using 
+        Terraform for infrastructure provisioning, GitLab CI/CD for automated deployments, 
+        and Prometheus/Grafana for observability.
+      </p>
+    </section>
+
+    <section class="about-section">
+      <h2>Architecture Overview</h2>
+      <p>
+        The platform consists of four isolated virtual machines, each with a specific role:
+      </p>
+      <ul>
+        <li><strong>App VM (gitops-app):</strong> Runs the Node.js/Express web application on port 3000. Serves the home page, about page, and Prometheus metrics endpoint.</li>
+        <li><strong>DB VM (gitops-db):</strong> Hosts PostgreSQL 15 database with the <code>gitopsdb</code> database. Accessible on port 5432.</li>
+        <li><strong>Monitoring VM (gitops-monitoring):</strong> Runs Prometheus, Grafana, and Node Exporter via Docker Compose. Provides metrics collection, dashboards, and alerting.</li>
+        <li><strong>Runner VM (gitops-runner):</strong> GitLab Runner with Docker executor for running CI/CD pipelines.</li>
+      </ul>
+    </section>
+
+    <section class="about-section">
+      <h2>Technology Stack</h2>
+      <ul>
+        <li><strong>Infrastructure:</strong> Proxmox VE 8, Terraform 1.5+, bpg/proxmox provider</li>
+        <li><strong>Application:</strong> Node.js 18, Express 4, EJS templating</li>
+        <li><strong>Database:</strong> PostgreSQL 15</li>
+        <li><strong>CI/CD:</strong> GitLab CI/CD with Docker executor</li>
+        <li><strong>Monitoring:</strong> Prometheus 2.47+, Grafana 10+, Node Exporter</li>
+        <li><strong>Containerization:</strong> Docker 20.10+, Docker Compose v2</li>
+        <li><strong>OS:</strong> Debian 12 (Bookworm) on all VMs</li>
+      </ul>
+    </section>
+
+    <section class="about-section">
+      <h2>GitOps Workflow</h2>
+      <ol>
+        <li><strong>Infrastructure Changes:</strong> Modify Terraform files → Commit to Git → GitLab CI runs <code>terraform plan</code> → Manual approval → <code>terraform apply</code></li>
+        <li><strong>Application Changes:</strong> Modify application code → Create Merge Request → CI runs tests → Merge to main → CD pipeline deploys via rsync → Systemd restarts service</li>
+        <li><strong>Monitoring Updates:</strong> Update Prometheus rules or Grafana dashboards → Commit → Manual trigger deploys new Docker Compose stack</li>
+      </ol>
+    </section>
+
+    <section class="about-section">
+      <h2>Network & Security</h2>
+      <ul>
+        <li>All VMs on the same bridge network (vmbr0) with DHCP</li>
+        <li>QEMU Guest Agent enabled for IP discovery</li>
+        <li>SSH key-based authentication only (no passwords)</li>
+        <li>PostgreSQL configured for MD5 authentication from all IPs</li>
+        <li>Grafana secured with admin/admin (change in production!)</li>
+        <li>Prometheus metrics exposed on /metrics endpoints</li>
+      </ul>
+    </section>
+
+    <section class="about-section">
+      <h2>Access URLs</h2>
+      <ul>
+        <li><strong>App:</strong> http://192.168.8.189:3000</li>
+        <li><strong>About Page:</strong> http://192.168.8.189:3000/about</li>
+        <li><strong>Metrics:</strong> http://192.168.8.189:3000/metrics</li>
+        <li><strong>Grafana:</strong> http://192.168.8.190:3000 (admin/admin)</li>
+        <li><strong>Prometheus:</strong> http://192.168.8.190:9090</li>
+        <li><strong>PostgreSQL:</strong> 192.168.8.188:5432 (db: gitopsdb, user: gitopsapp)</li>
+      </ul>
+    </section>
+
+    <section class="about-section">
+      <div style="text-align: center; margin-top: 2rem;">
+        <a href="/" class="btn btn-secondary">← Back to Home</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>GitOps App - Deployed with <span class="heart">♥</span> via GitOps on Proxmox VE</p>
+    </div>
+  </footer>
+</body>
+</html>
