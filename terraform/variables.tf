@@ -52,7 +52,7 @@ variable "target_node" {
 variable "golden_template_id" {
   type        = number
   description = "VM ID of the golden template used for cloning"
-  default     = 9001
+  default     = 9000
 }
 
 variable "storage_pool" {
@@ -96,7 +96,7 @@ variable "vm_specs" {
       id = 202
       cores = 2
       memory = 4096
-      disk = 20
+      disk = 60
       auto_start = true
       snippet = "monitoring.yaml"
     },

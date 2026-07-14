@@ -7,6 +7,8 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     groups: sudo
     shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_public_key}
 
 package_update: true
 
@@ -16,14 +18,17 @@ packages:
   - qemu-guest-agent
 
 runcmd:
+  - systemctl start postgresql
+  - systemctl enable postgresql
   - |
-    echo "listen_addresses = '*'" >> /etc/postgresql/*/main/postgresql.conf
-    echo "host all all 10.0.8.0/24 md5" >> /etc/postgresql/*/main/pg_hba.conf
     PGPASS=$(openssl rand -hex 16)
-    echo "gitopsapp:${PGPASS}" | sudo -u postgres psql -c "CREATE USER gitopsapp WITH PASSWORD '${PGPASS}';"
-    sudo -u postgres psql -c "CREATE DATABASE gitopsdb OWNER gitopsapp;"
-    echo "Created DB: gitopsdb, User: gitopsapp, Pass: ${PGPASS}" >> /var/log/db_setup.log
+    sudo -u postgres psql -c "CREATE USER gitopsapp WITH PASSWORD '$${PGPASS}';" || true
+    sudo -u postgres psql -c "CREATE DATABASE gitopsdb OWNER gitopsapp;" || true
+    echo "Created DB: gitopsdb, User: gitopsapp, Pass: $${PGPASS}" >> /var/log/db_setup.log
+  - |
+    echo "listen_addresses = '*'" >> /etc/postgresql/15/main/postgresql.conf
+    echo "host all all 0.0.0.0/0 md5" >> /etc/postgresql/15/main/pg_hba.conf
   - systemctl restart postgresql
-  - systemctl enable --now qemu-guest-agent
+  - systemctl start qemu-guest-agent
 
 final_message: "PostgreSQL ready on :5432"

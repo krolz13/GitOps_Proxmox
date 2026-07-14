@@ -7,33 +7,52 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     groups: sudo
     shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_public_key}
 
 package_update: true
 
 packages:
-  - prometheus
-  - prometheus-node-exporter
-  - grafana
   - qemu-guest-agent
+  - curl
+  - gnupg
+  - apt-transport-https
+  - software-properties-common
 
 runcmd:
+  - systemctl start qemu-guest-agent
+  - systemctl enable qemu-guest-agent
+  - |
+    # Add Prometheus repository
+    curl -fsSL https://apt.prometheus.io/pubkey.gpg | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/prometheus.gpg
+    echo "deb https://apt.prometheus.io/ bookworm main" | sudo tee /etc/apt/sources.list.d/prometheus.list
+  - |
+    # Add Grafana repository
+    curl -fsSL https://apt.grafana.com/gpg.key | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/grafana.gpg
+    echo "deb https://apt.grafana.com stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
+  - apt-get update
+  - apt-get install -y prometheus prometheus-node-exporter grafana
   - systemctl enable --now prometheus
   - |
     cat <<'PROM' > /etc/prometheus/prometheus.yml
+    global:
+      scrape_interval: 15s
     scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
       - job_name: 'node'
         static_configs:
-          - targets:
-            - 10.0.8.10:9100
-            - 10.0.8.11:9100
-            - 10.0.8.12:9100
-            - 10.0.8.13:9100
+          - targets: ['localhost:9100']
       - job_name: 'gitops-app'
         static_configs:
-          - targets: ['10.0.8.10:3000']
+          - targets: ['192.168.8.180:3000']
+      - job_name: 'gitops-db'
+        static_configs:
+          - targets: ['192.168.8.178:9100']
     PROM
   - systemctl restart prometheus
   - systemctl enable --now grafana-server
-  - systemctl enable --now qemu-guest-agent
+  - systemctl enable --now prometheus-node-exporter
 
 final_message: "Monitoring ready (Prometheus :9090, Grafana :3000)"

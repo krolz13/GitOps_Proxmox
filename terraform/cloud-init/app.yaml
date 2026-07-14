@@ -7,19 +7,106 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     groups: sudo
     shell: /bin/bash
+    ssh_authorized_keys:
+      - ${ssh_public_key}
 
 package_update: true
 
 packages:
   - nodejs
   - npm
-  - git
   - qemu-guest-agent
 
+write_files:
+  - path: /opt/gitops-app/package.json
+    content: |
+      {
+        "name": "gitops-app",
+        "version": "1.0.0",
+        "description": "GitOps Demo App",
+        "main": "src/server.js",
+        "scripts": {
+          "start": "node src/server.js"
+        },
+        "dependencies": {
+          "express": "^4.18.2",
+          "ejs": "^3.1.9"
+        }
+      }
+  - path: /opt/gitops-app/src/server.js
+    content: |
+      const express = require('express');
+      const path = require('path');
+      const app = express();
+      const PORT = process.env.PORT || 3000;
+
+      app.set('view engine', 'ejs');
+      app.set('views', path.join(__dirname, '..', 'views'));
+      app.use(express.static(path.join(__dirname, '..', 'public')));
+
+      app.get('/', (req, res) => {
+        res.render('index', { title: 'Home' });
+      });
+
+      app.get('/about', (req, res) => {
+        res.render('about', { title: 'About' });
+      });
+
+      app.get('/metrics', (req, res) => {
+        res.set('Content-Type', 'text/plain');
+        res.send('# HELP http_requests_total Total HTTP requests\n# TYPE http_requests_total counter\nhttp_requests_total 1\n');
+      });
+
+      app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on port $${PORT}`);
+      });
+  - path: /opt/gitops-app/views/index.ejs
+    content: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title><%= title %> - GitOps App</title>
+        <link rel="stylesheet" href="/style.css">
+      </head>
+      <body>
+        <div class="container">
+          <h1>Welcome to GitOps App</h1>
+          <p>This is the home page deployed via GitOps on Proxmox.</p>
+          <a href="/about">About</a> | <a href="/metrics">Metrics</a>
+        </div>
+      </body>
+      </html>
+  - path: /opt/gitops-app/views/about.ejs
+    content: |
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title><%= title %> - GitOps App</title>
+        <link rel="stylesheet" href="/style.css">
+      </head>
+      <body>
+        <div class="container">
+          <h1>About</h1>
+          <p>This app demonstrates GitOps deployment on Proxmox with Terraform.</p>
+          <p>Components:</p>
+          <ul>
+            <li>App VM (this): Node.js + Express</li>
+            <li>DB VM: PostgreSQL</li>
+            <li>Monitoring VM: Prometheus + Grafana</li>
+            <li>Runner VM: GitLab Runner</li>
+          </ul>
+          <a href="/">Home</a>
+        </div>
+      </body>
+      </html>
+  - path: /opt/gitops-app/public/style.css
+    content: |
+      body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
+      .container { text-align: center; }
+      a { color: #0066cc; }
+
 runcmd:
-  - mkdir -p /opt/gitops-app
-  - git clone --depth 1 https://gitlab.com/example/gitops-app.git /opt/gitops-app || echo "Repo exists"
-  - cd /opt/gitops-app && npm ci --production
+  - cd /opt/gitops-app && npm install --production
   - |
     cat <<'SVC' > /etc/systemd/system/gitops-app.service
     [Unit]

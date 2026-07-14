@@ -25,6 +25,7 @@ provider "proxmox" {
       address = var.proxmox_host
     }
   }
+
 }
 
 # Upload cloud-init snippets via Proxmox SSH helper
@@ -36,7 +37,7 @@ resource "proxmox_virtual_environment_file" "snippets" {
   node_name    = var.target_node
 
   source_raw {
-    data = each.key == "runner" ? templatefile(
+    data = contains(["app", "db", "monitoring", "runner"], each.key) ? templatefile(
       "${path.module}/cloud-init/${each.value.snippet}",
       {
         gitlab_runner_token = var.gitlab_runner_token
@@ -67,13 +68,19 @@ resource "proxmox_virtual_environment_vm" "vms" {
   }
 
   clone {
-    vm_id = proxmox_virtual_environment_vm.template.vm_id
+    vm_id = var.golden_template_id
   }
 
-  depends_on = [proxmox_virtual_environment_vm.template]
+  bios    = "seabios"
+
+  agent {
+    enabled = true
+    timeout = "15m"
+  }
 
   network_device {
     bridge = "vmbr0"
+    model  = "virtio"
   }
 
   initialization {
@@ -86,7 +93,8 @@ resource "proxmox_virtual_environment_vm" "vms" {
     }
   }
 
-  started = each.value.auto_start
+  started       = true
+  stop_on_destroy = true
 }
 
 output "vms" {
@@ -94,8 +102,14 @@ output "vms" {
     for instance, vm in proxmox_virtual_environment_vm.vms : instance => {
       id   = vm.vm_id
       name = vm.name
-      ip   = vm.ipv4_addresses != null ? values(vm.ipv4_addresses)[0][0] : "unknown"
-      role = title(replace(instance, "gitops-", ""))
+      ip = (
+        length(vm.ipv4_addresses) > 1 && length(vm.ipv4_addresses[1]) > 0
+        ? vm.ipv4_addresses[1][0]
+        : length(vm.ipv4_addresses) > 0 && length(vm.ipv4_addresses[0]) > 0
+        ? vm.ipv4_addresses[0][0]
+        : "unknown"
+      )
+      role = title(instance)
     }
   }
 }
@@ -103,9 +117,11 @@ output "vms" {
 locals {
   vm_ips = {
     for instance, vm in proxmox_virtual_environment_vm.vms : instance => (
-      vm.ipv4_addresses != null ? coalesce([
-        for ips in values(vm.ipv4_addresses) : ips[0] if length(ips) > 0
-      ]...) : "unknown"
+      length(vm.ipv4_addresses) > 1 && length(vm.ipv4_addresses[1]) > 0
+      ? vm.ipv4_addresses[1][0]
+      : length(vm.ipv4_addresses) > 0 && length(vm.ipv4_addresses[0]) > 0
+      ? vm.ipv4_addresses[0][0]
+      : "unknown"
     )
   }
 }
