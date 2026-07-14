@@ -15,11 +15,16 @@ package_update: true
 packages:
   - postgresql
   - postgresql-contrib
+  - prometheus-node-exporter
   - qemu-guest-agent
 
 runcmd:
+  - systemctl start qemu-guest-agent
+  - systemctl enable qemu-guest-agent
   - systemctl start postgresql
   - systemctl enable postgresql
+  - systemctl start prometheus-node-exporter
+  - systemctl enable prometheus-node-exporter
   - |
     PGPASS=$(openssl rand -hex 16)
     sudo -u postgres psql -c "CREATE USER gitopsapp WITH PASSWORD '$${PGPASS}';" || true
@@ -29,6 +34,5 @@ runcmd:
     echo "listen_addresses = '*'" >> /etc/postgresql/15/main/postgresql.conf
     echo "host all all 0.0.0.0/0 md5" >> /etc/postgresql/15/main/pg_hba.conf
   - systemctl restart postgresql
-  - systemctl start qemu-guest-agent
 
 final_message: "PostgreSQL ready on :5432"

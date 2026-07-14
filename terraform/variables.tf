@@ -96,7 +96,7 @@ variable "vm_specs" {
       id = 202
       cores = 2
       memory = 4096
-      disk = 60
+      disk = 80
       auto_start = true
       snippet = "monitoring.yaml"
     },

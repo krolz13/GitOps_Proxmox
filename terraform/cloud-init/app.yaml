@@ -1,130 +1,200 @@
-#cloud-config
-hostname: gitops-app
-manage_etc_hosts: true
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= title %> - GitOps App</title>
+  <link rel="stylesheet" href="/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="header">
+    <nav class="nav container">
+      <div class="nav-brand">
+        <svg class="logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="currentColor"/>
+          <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">GitOps App</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="/" class="nav-link active">Home</a></li>
+        <li><a href="/about" class="nav-link">About</a></li>
+        <li><a href="/metrics" class="nav-link">Metrics</a></li>
+        <li><a href="http://192.168.8.190:3000" target="_blank" class="nav-link external">Grafana</a></li>
+        <li><a href="http://192.168.8.190:9090" target="_blank" class="nav-link external">Prometheus</a></li>
+      </ul>
+    </nav>
+  </header>
 
-users:
-  - name: debian
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    groups: sudo
-    shell: /bin/bash
-    ssh_authorized_keys:
-      - ${ssh_public_key}
-
-package_update: true
-
-packages:
-  - nodejs
-  - npm
-  - qemu-guest-agent
-
-write_files:
-  - path: /opt/gitops-app/package.json
-    content: |
-      {
-        "name": "gitops-app",
-        "version": "1.0.0",
-        "description": "GitOps Demo App",
-        "main": "src/server.js",
-        "scripts": {
-          "start": "node src/server.js"
-        },
-        "dependencies": {
-          "express": "^4.18.2",
-          "ejs": "^3.1.9"
-        }
-      }
-  - path: /opt/gitops-app/src/server.js
-    content: |
-      const express = require('express');
-      const path = require('path');
-      const app = express();
-      const PORT = process.env.PORT || 3000;
-
-      app.set('view engine', 'ejs');
-      app.set('views', path.join(__dirname, '..', 'views'));
-      app.use(express.static(path.join(__dirname, '..', 'public')));
-
-      app.get('/', (req, res) => {
-        res.render('index', { title: 'Home' });
-      });
-
-      app.get('/about', (req, res) => {
-        res.render('about', { title: 'About' });
-      });
-
-      app.get('/metrics', (req, res) => {
-        res.set('Content-Type', 'text/plain');
-        res.send('# HELP http_requests_total Total HTTP requests\n# TYPE http_requests_total counter\nhttp_requests_total 1\n');
-      });
-
-      app.listen(PORT, '0.0.0.0', () => {
-        console.log(`Server running on port $${PORT}`);
-      });
-  - path: /opt/gitops-app/views/index.ejs
-    content: |
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title><%= title %> - GitOps App</title>
-        <link rel="stylesheet" href="/style.css">
-      </head>
-      <body>
-        <div class="container">
-          <h1>Welcome to GitOps App</h1>
-          <p>This is the home page deployed via GitOps on Proxmox.</p>
-          <a href="/about">About</a> | <a href="/metrics">Metrics</a>
+  <main class="main">
+    <section class="hero">
+      <div class="container">
+        <div class="hero-content">
+          <h1 class="hero-title">
+            <span class="hero-title-main">GitOps</span>
+            <span class="hero-title-sub">Deployment Platform</span>
+          </h1>
+          <p class="hero-description">
+            A modern, fully automated GitOps platform running on Proxmox VE.
+            Deploy infrastructure as code with Terraform, manage applications with GitLab CI/CD,
+            and monitor everything with Prometheus & Grafana.
+          </p>
+          <div class="hero-actions">
+            <a href="/about" class="btn btn-primary">Learn More</a>
+            <a href="/metrics" class="btn btn-secondary">View Metrics</a>
+          </div>
         </div>
-      </body>
-      </html>
-  - path: /opt/gitops-app/views/about.ejs
-    content: |
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title><%= title %> - GitOps App</title>
-        <link rel="stylesheet" href="/style.css">
-      </head>
-      <body>
-        <div class="container">
-          <h1>About</h1>
-          <p>This app demonstrates GitOps deployment on Proxmox with Terraform.</p>
-          <p>Components:</p>
-          <ul>
-            <li>App VM (this): Node.js + Express</li>
-            <li>DB VM: PostgreSQL</li>
-            <li>Monitoring VM: Prometheus + Grafana</li>
-            <li>Runner VM: GitLab Runner</li>
-          </ul>
-          <a href="/">Home</a>
+        <div class="hero-visual">
+          <div class="architecture-diagram">
+            <div class="arch-node arch-gitlab">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+              <span>GitLab</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node arch-terraform">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+              <span>Terraform</span>
+            </div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-node arch-proxmox">
+              <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+              <span>Proxmox VE</span>
+            </div>
+            <div class="arch-branches">
+              <div class="arch-node arch-vm">
+                <svg viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                <span>App VM</span>
+              </div>
+              <div class="arch-node arch-vm">
+                <svg viewBox="0 0 24 24" fill="currentColor"><cylinder cx="12" cy="10" r="5" height="10"></cylinder></svg>
+                <span>DB VM</span>
+              </div>
+              <div class="arch-node arch-vm">
+                <svg viewBox="0 0 24 24" fill="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="10"></line><line x1="6" y1="20" x2="6" y2="10"></line><path d="M2 10h20"></path><path d="M6 10a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2z"></path></svg>
+                <span>Monitoring VM</span>
+              </div>
+              <div class="arch-node arch-vm">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>Runner VM</span>
+              </div>
+            </div>
+          </div>
         </div>
-      </body>
-      </html>
-  - path: /opt/gitops-app/public/style.css
-    content: |
-      body { font-family: sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-      .container { text-align: center; }
-      a { color: #0066cc; }
+      </div>
+    </section>
 
-runcmd:
-  - cd /opt/gitops-app && npm install --production
-  - |
-    cat <<'SVC' > /etc/systemd/system/gitops-app.service
-    [Unit]
-    Description=GitOps Node.js App
-    After=network.target
+    <section class="features">
+      <div class="container">
+        <h2 class="section-title">Platform Components</h2>
+        <div class="features-grid">
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+            </div>
+            <h3>Infrastructure as Code</h3>
+            <p>All infrastructure defined in Terraform. Version-controlled, reproducible, and auditable.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            </div>
+            <h3>GitLab CI/CD</h3>
+            <p>Automated pipelines for building, testing, and deploying applications on every commit.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="10"></line><line x1="6" y1="20" x2="6" y2="10"></line><path d="M2 10h20"></path><path d="M6 10a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2z"></path></svg>
+            </div>
+            <h3>Proxmox Virtualization</h3>
+            <p>Four isolated VMs for App, Database, Monitoring, and CI/CD Runner.</p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="10"></line><line x1="6" y1="20" x2="6" y2="10"></line><path d="M2 10h20"></path><path d="M6 10a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2z"></path></svg>
+            </div>
+            <h3>Full Observability</h3>
+            <p>Prometheus metrics, Grafana dashboards, and Node Exporter on every VM.</p>
+          </article>
+        </div>
+      </div>
+    </section>
 
-    [Service]
-    WorkingDirectory=/opt/gitops-app
-    ExecStart=/usr/bin/node src/server.js
-    Restart=always
-    User=debian
-    Environment=NODE_ENV=production
+    <section class="status-bar">
+      <div class="container">
+        <h2 class="section-title">Service Status</h2>
+        <div class="status-grid">
+          <div class="status-item">
+            <div class="status-indicator status-up"></div>
+            <div class="status-info">
+              <span class="status-name">App Service</span>
+              <span class="status-url">192.168.8.189:3000</span>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-indicator status-up"></div>
+            <div class="status-info">
+              <span class="status-name">PostgreSQL</span>
+              <span class="status-url">192.168.8.188:5432</span>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-indicator status-up"></div>
+            <div class="status-info">
+              <span class="status-name">Prometheus</span>
+              <span class="status-url">192.168.8.190:9090</span>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-indicator status-up"></div>
+            <div class="status-info">
+              <span class="status-name">Grafana</span>
+              <span class="status-url">192.168.8.190:3000</span>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-indicator status-up"></div>
+            <div class="status-info">
+              <span class="status-name">Node Exporter (App)</span>
+              <span class="status-url">192.168.8.189:9100</span>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-indicator status-up"></div>
+            <div class="status-info">
+              <span class="status-name">Node Exporter (DB)</span>
+              <span class="status-url">192.168.8.188:9100</span>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-indicator status-up"></div>
+            <div class="status-info">
+              <span class="status-name">GitLab Runner</span>
+              <span class="status-url">192.168.8.170</span>
+            </div>
+          </div>
+          <div class="status-item">
+            <div class="status-indicator status-up"></div>
+            <div class="status-info">
+              <span class="status-name">Node Exporter (Mon)</span>
+              <span class="status-url">192.168.8.190:9100</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
 
-    [Install]
-    WantedBy=multi-user.target
-    SVC
-  - systemctl daemon-reload
-  - systemctl enable --now gitops-app
-  - systemctl enable --now qemu-guest-agent
-
-final_message: "GitOps App VM ready on :3000"
+  <footer class="footer">
+    <div class="container">
+      <p>GitOps App - Deployed with <span class="heart">♥</span> via GitOps on Proxmox VE</p>
+      <p class="footer-links">
+        <a href="https://gitlab.com" target="_blank">GitLab</a> •
+        <a href="https://www.terraform.io" target="_blank">Terraform</a> •
+        <a href="https://prometheus.io" target="_blank">Prometheus</a> •
+        <a href="https://grafana.com" target="_blank">Grafana</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>
