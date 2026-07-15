@@ -108,6 +108,15 @@ variable "vm_specs" {
       disk = 20
       auto_start = true
       snippet = "runner.yaml"
+    },
+    "load-tester" = {
+      name = "gitops-load-tester"
+      id = 204
+      cores = 2
+      memory = 4096
+      disk = 20
+      auto_start = true
+      snippet = "load-tester.yaml"
     }
   }
 }

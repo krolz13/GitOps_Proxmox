@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Load Testing Platform">
+  <meta name="theme-color" content="#2563eb">
+  <title>Load Tester - GitOps Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css?v=2">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect fill='%232563eb' width='32' height='32' rx='6'/%3E%3Cpath d='M8 12h16M8 16h12M8 20h8' stroke='white' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+</head>
+<body>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme" title="Toggle dark/light mode">
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  </button>
+
+  <header class="header" role="banner">
+    <nav class="nav container" aria-label="Main navigation">
+      <a href="/" class="nav-brand" aria-label="Load Tester Home">
+        <svg class="logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="currentColor"/>
+          <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">Load Tester</span>
+        <span class="version-badge">v1.0.0</span>
+      </a>
+      <ul class="nav-links" role="list">
+        <li><a href="/" class="nav-link active" data-page="dashboard">Dashboard</a></li>
+        <li><a href="#engines" class="nav-link" data-page="engines">Engines</a></li>
+        <li><a href="#history" class="nav-link" data-page="history">History</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <div class="progress-bar" id="progressBar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+
+  <main id="mainContent">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="container">
+        <div class="hero-grid">
+          <div class="hero-content">
+            <div class="hero-badges">
+              <span class="badge badge-primary">Production Ready</span>
+              <span class="badge badge-success">Real-time Control</span>
+              <span class="badge badge-info" id="uptimeBadge">Loading...</span>
+            </div>
+            <h1 id="hero-title" class="hero-title">
+              <span class="hero-title-main">Load Testing</span>
+              <span class="hero-title-sub">Platform</span>
+            </h1>
+            <p class="hero-description">
+              Generate realistic traffic from a dedicated VM. Control rate, target, and engine in real-time.
+              Built with pluggable engines for Node.js, Locust, k6, or custom implementations.
+            </p>
+            <div class="hero-stats" id="heroStats">
+              <div class="stat-card" data-stat="services">
+                <span class="stat-value" id="statServices">--</span>
+                <span class="stat-label">Services</span>
+              </div>
+              <div class="stat-card" data-stat="healthy">
+                <span class="stat-value" id="statHealthy">--</span>
+                <span class="stat-label">Healthy</span>
+              </div>
+              <div class="stat-card" data-stat="uptime">
+                <span class="stat-value" id="statUptime">--</span>
+                <span class="stat-label">Uptime</span>
+              </div>
+              <div class="stat-card" data-stat="tests">
+                <span class="stat-value" id="statTests">0</span>
+                <span class="stat-label">Tests Run</span>
+              </div>
+            </div>
+            <div class="hero-actions">
+              <a href="#config" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Configure Test
+              </a>
+              <a href="#engines" class="btn btn-secondary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><path d="M9 9h6v6H9z"/></svg>
+                Manage Engines
+              </a>
+            </div>
+          </div>
+
+          <div class="hero-panel">
+            <div class="panel-header">
+              <h2 class="panel-title">System Overview</h2>
+              <div class="panel-status">
+                <span class="status-dot status-checking" id="systemStatus"></span>
+                <span id="systemStatusText">Checking...</span>
+              </div>
+            </div>
+            <div class="panel-grid" id="systemInfo">
+              <div class="info-item"><span class="info-label">Engine</span><span class="info-value" id="sysEngine">--</span></div>
+              <div class="info-item"><span class="info-label">Target</span><span class="info-value" id="sysTarget">--</span></div>
+              <div class="info-item"><span class="info-label">Rate (RPS)</span><span class="info-value" id="sysRate">--</span></div>
+              <div class="info-item"><span class="info-label">Pattern</span><span class="info-value" id="sysPattern">--</span></div>
+              <div class="info-item"><span class="info-label">Virtual Users</span><span class="info-value" id="sysVUsers">--</span></div>
+              <div class="info-item"><span class="info-label">Think Time</span><span class="info-value" id="sysThink">--</span></div>
+              <div class="info-item"><span class="info-label">Node.js</span><span class="info-value" id="sysNode">--</span></div>
+              <div class="info-item"><span class="info-label">Platform</span><span class="info-value" id="sysPlatform">--</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="config-section" id="config" aria-labelledby="config-title">
+      <div class="container">
+        <header class="section-header">
+          <h2 id="config-title" class="section-title">Test Configuration</h2>
+        </header>
+        <div class="config-grid">
+          <div class="config-card">
+            <h3 class="config-title">Target & Rate</h3>
+            <div class="form-group">
+              <label for="targetUrl" class="form-label">Target URL <span class="required">*</span></label>
+              <input type="url" id="targetUrl" class="form-input" placeholder="https://example.com/api/endpoint" required>
+              <small class="form-hint">Full URL including protocol and path</small>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="rate" class="form-label">Requests/sec (RPS) <span class="required">*</span></label>
+                <input type="number" id="rate" class="form-input" min="0" max="10000" value="10" required>
+              </div>
+              <div class="form-group">
+                <label for="pattern" class="form-label">Traffic Pattern</label>
+                <select id="pattern" class="form-select">
+                  <option value="constant">Constant</option>
+                  <option value="ramp">Ramp Up</option>
+                  <option value="spike">Spike</option>
+                  <option value="step">Step</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="vUsers" class="form-label">Virtual Users</label>
+                <input type="number" id="vUsers" class="form-input" min="1" max="1000" value="10">
+              </div>
+              <div class="form-group">
+                <label for="thinkTime" class="form-label">Think Time (ms)</label>
+                <input type="number" id="thinkTime" class="form-input" min="0" max="5000" value="0">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="method" class="form-label">HTTP Method</label>
+              <select id="method" class="form-select">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="PUT">PUT</option>
+                <option value="DELETE">DELETE</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="headers" class="form-label">Custom Headers (JSON)</label>
+              <textarea id="headers" class="form-textarea" rows="4" placeholder='{"Authorization": "Bearer token", "X-Custom": "value"}'></textarea>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary" id="applyConfig">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 3 3 3 9"/></svg>
+                Apply Configuration
+              </button>
+            </div>
+          </div>
+
+          <div class="config-card">
+            <h3 class="config-title">Engine Selection</h3>
+            <div class="engine-selector" id="engineSelector">
+              <div class="engine-option" data-engine="node">
+                <div class="engine-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><path d="M9 9h6v6H9z"/></svg></div>
+                <div class="engine-info">
+                  <span class="engine-name">Node.js Engine</span>
+                  <span class="engine-desc">Built-in axios-based engine</span>
+                </div>
+                <span class="engine-badge">Active</span>
+              </div>
+              <div class="engine-option disabled" data-engine="locust">
+                <div class="engine-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 1-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 1 3 8v8a2 2 0 0 1-1 1.73l7 4a2 2 0 0 1 2 0l7-4A2 2 0 0 1 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+                <div class="engine-info"><span class="engine-name">Locust Engine</span><span class="engine-desc">Python-based distributed</span></div>
+                <span class="engine-badge coming-soon">Soon</span>
+              </div>
+              <div class="engine-option disabled" data-engine="k6">
+                <div class="engine-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                <div class="engine-info"><span class="engine-name">k6 Engine</span><span class="engine-desc">Go-based high performance</span></div>
+                <span class="engine-badge coming-soon">Soon</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="controls-section" aria-labelledby="controls-title">
+      <div class="container">
+        <header class="section-header">
+          <h2 id="controls-title" class="section-title">Live Control</h2>
+        </header>
+        <div class="controls-grid">
+          <div class="control-panel">
+            <div class="control-header">
+              <h3>Test Execution</h3>
+              <div class="control-status">
+                <span class="status-dot status-idle" id="testStatus"></span>
+                <span id="testStatusText">Idle</span>
+              </div>
+            </div>
+            <div class="control-buttons">
+              <button type="button" class="btn btn-primary btn-lg" id="startTest" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Start Test
+              </button>
+              <button type="button" class="btn btn-danger btn-lg" id="stopTest" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                Stop Test
+              </button>
+            </div>
+          </div>
+
+          <div class="metrics-panel">
+            <h3>Live Metrics</h3>
+            <div class="metrics-grid" id="metricsGrid">
+              <article class="metric-card" data-metric="requests">
+                <div class="metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+                <div class="metric-content">
+                  <span class="metric-label">Total Requests</span>
+                  <span class="metric-value" id="metricRequests">0</span>
+                </div>
+              </article>
+              <article class="metric-card" data-metric="successes">
+                <div class="metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg></div>
+                <div class="metric-content">
+                  <span class="metric-label">Successful</span>
+                  <span class="metric-value" id="metricSuccesses">0</span>
+                </div>
+              </article>
+              <article class="metric-card" data-metric="errors">
+                <div class="metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+                <div class="metric-content">
+                  <span class="metric-label">Errors</span>
+                  <span class="metric-value" id="metricErrors">0</span>
+                </div>
+              </article>
+              <article class="metric-card" data-metric="errorRate">
+                <div class="metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div>
+                <div class="metric-content">
+                  <span class="metric-label">Error Rate</span>
+                  <span class="metric-value" id="metricErrorRate">0%</span>
+                </div>
+              </article>
+              <article class="metric-card" data-metric="rps">
+                <div class="metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+                <div class="metric-content">
+                  <span class="metric-label">Current RPS</span>
+                  <span class="metric-value" id="metricRps">0</span>
+                </div>
+              </article>
+              <article class="metric-card" data-metric="latency">
+                <div class="metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                <div class="metric-content">
+                  <span class="metric-label">Avg Latency</span>
+                  <span class="metric-value" id="metricLatency">0ms</span>
+                </div>
+              </article>
+              <article class="metric-card" data-metric="uptime">
+                <div class="metric-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                <div class="metric-content">
+                  <span class="metric-label">Test Duration</span>
+                  <span class="metric-value" id="metricUptime">0s</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="engines-section" id="engines" aria-labelledby="engines-title">
+      <div class="container">
+        <header class="section-header">
+          <h2 id="engines-title" class="section-title">Engine Management</h2>
+          <p class="section-subtitle">Manage and switch between load testing engines</p>
+        </header>
+        <div class="engines-grid" id="enginesGrid"></div>
+      </div>
+    </section>
+
+    <section class="history-section" id="history" aria-labelledby="history-title">
+      <div class="container">
+        <header class="section-header">
+          <h2 id="history-title" class="section-title">Test History</h2>
+        </header>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <p>No tests run yet</p>
+            <p class="history-hint">Configure and start your first load test</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="quick-links" aria-labelledby="links-title">
+      <div class="container">
+        <h2 id="links-title" class="section-title">Quick Access</h2>
+        <div class="links-grid">
+          <a href="http://192.168.8.190:3000" target="_blank" rel="noopener" class="link-card">
+            <div class="link-icon grafana"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="10"/><line x1="6" y1="20" x2="6" y2="10"/><path d="M2 10h20"/></svg></div>
+            <div class="link-info">
+              <span class="link-name">Grafana Dashboards</span>
+              <span class="link-desc">Visualize metrics & create alerts</span>
+            </div>
+            <span class="link-url">192.168.8.190:3000</span>
+          </a>
+          <a href="http://192.168.8.190:9090" target="_blank" rel="noopener" class="link-card">
+            <div class="link-icon prometheus"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+            <div class="link-info">
+              <span class="link-name">Prometheus</span>
+              <span class="link-desc">Query metrics & set alerts</span>
+            </div>
+            <span class="link-url">192.168.8.190:9090</span>
+          </a>
+          <a href="https://gitlab.com" target="_blank" rel="noopener" class="link-card">
+            <div class="link-icon gitlab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.65 14.39L12 22.13 1.35 14.39a.84.84 0 0 1-.3-.94l1.22-3.78 2.44-7.51A.42.42 0 0 1 4.82 2a.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.49h8.1a.42.42 0 0 1 .11-.18.43.43 0 0 1 .58 0 .42.42 0 0 1 .11.18l2.44 7.49 1.22 3.78a.84.84 0 0 1-.3.94z"/></svg></div>
+            <div class="link-info"><span class="link-name">GitLab CI/CD</span><span class="link-desc">Pipeline management & deployments</span></div>
+            <span class="link-url">gitlab.com</span>
+          </a>
+          <a href="/api/system" target="_blank" rel="noopener" class="link-card">
+            <div class="link-icon api"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
+            <div class="link-info"><span class="link-name">System API</span><span class="link-desc">REST endpoints for automation</span></div>
+            <span class="link-url">/api/system</span>
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" role="contentinfo">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <a href="/" class="nav-brand" aria-label="Load Tester Home">
+            <svg class="logo" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+              <rect width="32" height="32" rx="8" fill="currentColor"/>
+              <path d="M8 12h16M8 16h12M8 20h8" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <span class="brand-text">Load Tester</span>
+          </a>
+          <p class="footer-tagline">Modern infrastructure management via GitOps on Proxmox VE</p>
+        </div>
+        <nav class="footer-nav" aria-label="Footer navigation">
+          <div class="footer-col"><h4>Platform</h4><ul><li><a href="/">Dashboard</a></li><li><a href="#engines">Engines</a></li><li><a href="#history">History</a></li></ul></div>
+          <div class="footer-col"><h4>Monitoring</h4><ul><li><a href="http://192.168.8.190:3000" target="_blank" rel="noopener">Grafana</a></li><li><a href="http://192.168.8.190:9090" target="_blank" rel="noopener">Prometheus</a></li><li><a href="/api/services">Services API</a></li></ul></div>
+          <div class="footer-col"><h4>CI/CD</h4><ul><li><a href="https://gitlab.com" target="_blank" rel="noopener">GitLab</a></li><li><a href="https://gitlab.com" target="_blank" rel="noopener">Pipelines</a></li><li><a href="https://gitlab.com" target="_blank" rel="noopener">Deployments</a></li></ul></div>
+        </nav>
+      </div>
+      <div class="footer-bottom">
+        <p class="copyright">Load Tester v1.0.0 — Deployed with <span class="heart">♥</span> via GitOps on Proxmox VE</p>
+        <div class="footer-links"><a href="https://gitlab.com" target="_blank" rel="noopener">GitLab</a><a href="https://www.terraform.io" target="_blank" rel="noopener">Terraform</a><a href="https://prometheus.io" target="_blank" rel="noopener">Prometheus</a><a href="https://grafana.com" target="_blank" rel="noopener">Grafana</a></div>
+      </div>
+    </div>
+  </footer>
+
+  <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="/app.js?v=2"></script>
+</body>
+</html>

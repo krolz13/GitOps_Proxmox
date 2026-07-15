@@ -41,12 +41,13 @@ echo "  VM IP Discovery via Proxmox API"
 echo "=========================================="
 echo ""
 
-for vmid in 200 201 202 203; do
+for vmid in 200 201 202 203 204; do
     case $vmid in
         200) vmname="gitops-app" ;;
         201) vmname="gitops-db" ;;
         202) vmname="gitops-monitoring" ;;
         203) vmname="gitops-runner" ;;
+        204) vmname="gitops-load-tester" ;;
     esac
     
     echo "--- VM $vmid ($vmname) ---"

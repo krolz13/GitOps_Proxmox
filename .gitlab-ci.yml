@@ -5,6 +5,7 @@ stages:
   - build
   - test
   - deploy
+  - load-test
   - notify
 
 variables:
@@ -12,8 +13,9 @@ variables:
   DOCKER_REGISTRY: registry.gitlab.com
   DOCKER_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
   
-  # Deployment target
-  DEPLOY_HOST: "192.168.8.189"
+  # Deployment targets
+  DEPLOY_HOST: "192.168.8.195"
+  DEPLOY_HOST_LOAD_TESTER: "192.168.8.197"
   DEPLOY_USER: "debian"
   DEPLOY_PATH: "/opt/gitops-app"
   
@@ -90,7 +92,7 @@ deploy_staging:
       "
   environment:
     name: staging
-    url: http://192.168.8.189:3000
+    url: http://$DEPLOY_HOST:3000
   only:
     - develop
   when: manual
@@ -122,7 +124,7 @@ deploy_production:
       "
   environment:
     name: production
-    url: http://192.168.8.189:3000
+    url: http://$DEPLOY_HOST:3000
   only:
     - main
   when: manual
@@ -153,5 +155,83 @@ trigger_monitoring:
   trigger:
     include: monitoring/.gitlab-ci.yml
   only:
+    - main
+  when: manual
+
+# Trigger pipeline for load tester
+trigger_load_tester:
+  stage: deploy
+  trigger:
+    include: load-tester/.gitlab-ci.yml
+  only:
+    - main
+  when: manual
+
+# Run automated load test against the app
+run_load_test:
+  stage: load-test
+  image: alpine:latest
+  variables:
+    LOAD_TEST_DURATION_SEC: 30
+    LOAD_TEST_RPS: 50
+  script:
+    - apk add --no-cache curl jq
+    
+    # 1. Start the load test
+    - echo "Starting load test on http://$DEPLOY_HOST:3000 at $LOAD_TEST_RPS RPS..."
+    - |
+      START_RESPONSE=$(curl -s -X POST -H "Content-Type: application/json" \
+        -d "{\"targetUrl\":\"http://$DEPLOY_HOST:3000\",\"rate\":$LOAD_TEST_RPS}" \
+        "http://$DEPLOY_HOST_LOAD_TESTER:3000/api/start")
+    
+    - echo "Start response: $START_RESPONSE"
+    - |
+      if [ "$(echo "$START_RESPONSE" | jq -r '.success')" != "true" ]; then
+        echo "Failed to start load test!"
+        exit 1
+      fi
+    
+    # 2. Wait for the test duration
+    - echo "Running load test for $LOAD_TEST_DURATION_SEC seconds..."
+    - sleep $LOAD_TEST_DURATION_SEC
+    
+    # 3. Stop the load test
+    - echo "Stopping load test..."
+    - curl -s -X POST "http://$DEPLOY_HOST_LOAD_TESTER:3000/api/stop"
+    
+    # 4. Get and report metrics
+    - echo "Retrieving load test metrics..."
+    - STATUS_RESPONSE=$(curl -s "http://$DEPLOY_HOST_LOAD_TESTER:3000/api/status")
+    - echo "Final Status: $STATUS_RESPONSE"
+    
+    # Extract metrics using jq
+    - REQUESTS=$(echo "$STATUS_RESPONSE" | jq -r '.stats.requests // 0')
+    - SUCCESSES=$(echo "$STATUS_RESPONSE" | jq -r '.stats.successes // 0')
+    - ERRORS=$(echo "$STATUS_RESPONSE" | jq -r '.stats.errors // 0')
+    - ERROR_RATE=$(echo "$STATUS_RESPONSE" | jq -r '.stats.errorRate // 0')
+    - RPS=$(echo "$STATUS_RESPONSE" | jq -r '.stats.rps // 0')
+    - AVG_LATENCY=$(echo "$STATUS_RESPONSE" | jq -r '.stats.latency.avg // 0')
+    
+    - echo "=========================================="
+    - echo "             LOAD TEST RESULTS            "
+    - echo "=========================================="
+    - echo "Target URL:      http://$DEPLOY_HOST:3000"
+    - echo "Total Requests:  $REQUESTS"
+    - echo "Successes:       $SUCCESSES"
+    - echo "Errors:          $ERRORS"
+    - echo "Error Rate:      $ERROR_RATE%"
+    - echo "Actual RPS:      $RPS"
+    - echo "Avg Latency:     $AVG_LATENCY ms"
+    - echo "=========================================="
+    
+    # Fail job if error rate exceeds 5%
+    - |
+      if [ "$(echo "$ERROR_RATE" | cut -d. -f1)" -ge 5 ]; then
+        echo "ERROR: Load test failed! Error rate ($ERROR_RATE%) is above threshold of 5%."
+        exit 1
+      fi
+    - echo "Load test passed successfully!"
+  only:
+    - develop
     - main
   when: manual
